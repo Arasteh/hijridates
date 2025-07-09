@@ -6,8 +6,9 @@
 	<title>گزارش بصری ماه‌های قمری</title>
 	<script src="https://cdn.tailwindcss.com"></script>
 	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 		body {
-			font-family: sans-serif;
+			font-family: 'Inter', sans-serif;
 			background-color: #f0f2f5;
 			color: #333;
 		}
@@ -56,9 +57,9 @@
 			border: 1px solid #e2e8f0;
 			display: block;
 			margin: 1rem auto;
-			image-rendering: pixelated;
-			max-width: 100%;
-			height: auto;
+			image-rendering: pixelated; /* Ensures sharp pixels */
+			max-width: 100%; /* Make canvas responsive */
+			height: auto; /* Maintain aspect ratio */
 		}
 	</style>
 </head>
@@ -81,7 +82,7 @@
 		<div id="summaryContainer" class="text-center mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
 		</div>
 
-		<canvas id="dataCanvas" width="801" height="12" class="rounded-lg"></canvas>
+		<canvas id="dataCanvas" width="1602" height="24" class="rounded-lg"></canvas>
 
 		<h2 class="text-2xl font-bold text-center mb-4 text-blue-600 mt-8">جدول جزئیات ماه‌ها</h2>
 		<div id="reportContainer" class="scroll-container">
@@ -130,8 +131,8 @@
 			const ctx = canvas.getContext('2d');
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-			canvas.width = numYears;
-			canvas.height = 12;
+			canvas.width = numYears * 2;
+			canvas.height = 12 * 2;
 
 			for (let yearIdx = 0; yearIdx < numYears; yearIdx++) {
 				const currentYear = minYear + yearIdx;
@@ -142,7 +143,7 @@
 					} else {
 						ctx.fillStyle = '#ffffff';
 					}
-					ctx.fillRect(yearIdx, month - 1, 1, 1);
+					ctx.fillRect(yearIdx * 2, (month - 1) * 2, 2, 2);
 				}
 			}
 
