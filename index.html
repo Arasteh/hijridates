@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>گزارش بصری ماه‌های قمری</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<style>
+		body {
+			font-family: sans-serif;
+			background-color: #f0f2f5;
+			color: #333;
+		}
+		.container {
+			max-width: 1200px;
+			margin: 2rem auto;
+			padding: 1.5rem;
+			background-color: #ffffff;
+			border-radius: 0.75rem;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		}
+		table {
+			width: 100%;
+			border-collapse: separate;
+			border-spacing: 0;
+			overflow: hidden;
+		}
+		th, td {
+			padding: 0.4rem;
+			text-align: center;
+			border: 1px solid #e2e8f0;
+			font-size: 0.75rem;
+		}
+		th {
+			background-color: #4a90e2;
+			color: white;
+			font-weight: 600;
+			position: sticky;
+			top: 0;
+			z-index: 10;
+		}
+		td {
+			background-color: #ffffff;
+		}
+		.highlighted {
+			background-color: #a7f3d0;
+			font-weight: 500;
+		}
+		.scroll-container {
+			max-height: 400px;
+			overflow-y: auto;
+			border-radius: 0.75rem;
+			border: 1px solid #e2e8f0;
+		}
+		canvas {
+			border: 1px solid #e2e8f0;
+			display: block;
+			margin: 1rem auto;
+			image-rendering: pixelated;
+			max-width: 100%;
+			height: auto;
+		}
+	</style>
+</head>
+<body class="p-4">
+	<div class="container">
+		<h1 class="text-3xl font-bold text-center mb-6 text-blue-700">گزارش بصری ماه‌های قمری</h1>
+
+		<textarea
+			id="dataInput"
+			class="w-full h-40 p-4 mb-6 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
+			placeholder="داده‌های خود را اینجا وارد کنید..."
+			onkeyup="generateReport()"
+		>
+0504-02-15	شنبه
+0528-04-23	دوشنبه
+0529-07-01	پنجشنبه
+0536-11-15	پنجشنبه
+</textarea>
+
+		<div id="summaryContainer" class="text-center mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+		</div>
+
+		<canvas id="dataCanvas" width="801" height="12" class="rounded-lg"></canvas>
+
+		<h2 class="text-2xl font-bold text-center mb-4 text-blue-600 mt-8">جدول جزئیات ماه‌ها</h2>
+		<div id="reportContainer" class="scroll-container">
+		</div>
+	</div>
+
+	<script>
+		function generateReport() {
+			const dataInput = document.getElementById('dataInput').value;
+			const lines = dataInput.trim().split('\n');
+			const detectedData = new Set();
+
+			lines.forEach(line => {
+				const parts = line.trim().split(/\s+/);
+				if (parts.length >= 1) {
+					const datePart = parts[0];
+					const dateSegments = datePart.split('-');
+					if (dateSegments.length === 3) {
+						const year = parseInt(dateSegments[0], 10);
+						const month = parseInt(dateSegments[1], 10);
+						if (!isNaN(year) && !isNaN(month) && year >= 500 && year <= 1300 && month >= 1 && month <= 12) {
+							detectedData.add(`${year}-${month}`);
+						}
+					}
+				}
+			});
+
+			const minYear = 500;
+			const maxYear = 1300;
+			const numYears = maxYear - minYear + 1;
+			const totalPossibleCells = numYears * 12;
+			const greenCellsCount = detectedData.size;
+
+			const summaryContainer = document.getElementById('summaryContainer');
+			let summaryHtml = `
+				<p class="text-lg font-semibold text-gray-800">
+					کسر ماه‌های دارای داده: ${greenCellsCount}/${totalPossibleCells}
+				</p>
+				<p class="text-lg font-semibold text-gray-800">
+					درصد ماه‌های دارای داده: ${((greenCellsCount / totalPossibleCells) * 100).toFixed(2)}%
+				</p>
+			`;
+			summaryContainer.innerHTML = summaryHtml;
+
+			const canvas = document.getElementById('dataCanvas');
+			const ctx = canvas.getContext('2d');
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+			canvas.width = numYears;
+			canvas.height = 12;
+
+			for (let yearIdx = 0; yearIdx < numYears; yearIdx++) {
+				const currentYear = minYear + yearIdx;
+				for (let month = 1; month <= 12; month++) {
+					const key = `${currentYear}-${month}`;
+					if (detectedData.has(key)) {
+						ctx.fillStyle = '#a7f3d0';
+					} else {
+						ctx.fillStyle = '#ffffff';
+					}
+					ctx.fillRect(yearIdx, month - 1, 1, 1);
+				}
+			}
+
+			const reportContainer = document.getElementById('reportContainer');
+			let tableHtml = `
+				<table class="min-w-full bg-white rounded-lg shadow-md">
+					<thead>
+						<tr>
+							<th class="rounded-tr-lg">سال قمری</th>
+							${Array.from({ length: 12 }, (_, i) => `<th class="${i === 11 ? 'rounded-tl-lg' : ''}">ماه ${i + 1}</th>`).join('')}
+						</tr>
+					</thead>
+					<tbody>
+			`;
+
+			for (let year = minYear; year <= maxYear; year++) {
+				tableHtml += `<tr><td class="font-semibold">${year}</td>`;
+				for (let month = 1; month <= 12; month++) {
+					const key = `${year}-${month}`;
+					const isHighlighted = detectedData.has(key) ? 'highlighted' : '';
+					tableHtml += `<td class="${isHighlighted}"></td>`;
+				}
+				tableHtml += `</tr>`;
+			}
+
+			tableHtml += `
+					</tbody>
+				</table>
+			`;
+
+			reportContainer.innerHTML = tableHtml;
+		}
+
+		window.onload = generateReport;
+	</script>
+</body>
+</html>
