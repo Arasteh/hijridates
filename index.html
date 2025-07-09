@@ -6,9 +6,8 @@
 	<title>گزارش بصری ماه‌های قمری</title>
 	<script src="https://cdn.tailwindcss.com"></script>
 	<style>
-		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 		body {
-			font-family: 'Inter', sans-serif;
+			font-family: sans-serif;
 			background-color: #f0f2f5;
 			color: #333;
 		}
@@ -44,7 +43,7 @@
 			background-color: #ffffff;
 		}
 		.highlighted {
-			background-color: #a7f3d0;
+			background-color: #090;
 			font-weight: 500;
 		}
 		.scroll-container {
@@ -82,7 +81,7 @@
 		<div id="summaryContainer" class="text-center mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
 		</div>
 
-		<canvas id="dataCanvas" width="1602" height="24" class="rounded-lg"></canvas>
+		<canvas id="dataCanvas" width="400" height="384" class="rounded-lg"></canvas>
 
 		<h2 class="text-2xl font-bold text-center mb-4 text-blue-600 mt-8">جدول جزئیات ماه‌ها</h2>
 		<div id="reportContainer" class="scroll-container">
@@ -103,7 +102,8 @@
 					if (dateSegments.length === 3) {
 						const year = parseInt(dateSegments[0], 10);
 						const month = parseInt(dateSegments[1], 10);
-						if (!isNaN(year) && !isNaN(month) && year >= 500 && year <= 1300 && month >= 1 && month <= 12) {
+						// Adjusted maxYear to 1299
+						if (!isNaN(year) && !isNaN(month) && year >= 500 && year <= 1299 && month >= 1 && month <= 12) {
 							detectedData.add(`${year}-${month}`);
 						}
 					}
@@ -111,8 +111,8 @@
 			});
 
 			const minYear = 500;
-			const maxYear = 1300;
-			const numYears = maxYear - minYear + 1;
+			const maxYear = 1299; // Changed to 1299 as requested
+			const numYears = maxYear - minYear + 1; // 800 years
 			const totalPossibleCells = numYears * 12;
 			const greenCellsCount = detectedData.size;
 
@@ -131,19 +131,30 @@
 			const ctx = canvas.getContext('2d');
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-			canvas.width = numYears * 2;
-			canvas.height = 12 * 2;
+			const numRows = 8;
+			const yearsPerRow = numYears / numRows; // 800 / 8 = 100 years per row
+			const pixelsPerUnit = 4; // Each month pixel is 4x4
 
-			for (let yearIdx = 0; yearIdx < numYears; yearIdx++) {
-				const currentYear = minYear + yearIdx;
+			// Set canvas dimensions based on new layout
+			canvas.width = yearsPerRow * pixelsPerUnit; // 100 * 4 = 400
+			canvas.height = numRows * 12 * pixelsPerUnit; // 8 * 12 * 4 = 384
+
+			for (let year = minYear; year <= maxYear; year++) {
+				const totalYearIndex = year - minYear; // 0 to 799
+				const row = Math.floor(totalYearIndex / yearsPerRow);
+				const yearInRowIndex = totalYearIndex % yearsPerRow;
+
 				for (let month = 1; month <= 12; month++) {
-					const key = `${currentYear}-${month}`;
+					const key = `${year}-${month}`;
 					if (detectedData.has(key)) {
-						ctx.fillStyle = '#a7f3d0';
+						ctx.fillStyle = '#090';
 					} else {
 						ctx.fillStyle = '#ffffff';
 					}
-					ctx.fillRect(yearIdx * 2, (month - 1) * 2, 2, 2);
+					// Calculate x and y coordinates for 4x4 pixel blocks
+					const x = yearInRowIndex * pixelsPerUnit;
+					const y = (row * 12 * pixelsPerUnit) + ((month - 1) * pixelsPerUnit);
+					ctx.fillRect(x, y, pixelsPerUnit, pixelsPerUnit);
 				}
 			}
 
