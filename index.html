@@ -42,9 +42,16 @@
 		td {
 			background-color: #ffffff;
 		}
+		/* رنگ برای ماه‌های دارای داده تکی (سبز) */
 		.highlighted {
 			background-color: #090;
 			font-weight: 500;
+		}
+		/* رنگ برای ماه‌های متوالی (آبی) */
+		.consecutive-highlighted {
+			background-color: #0000FF; /* آبی */
+			font-weight: 500;
+			color: white; /* متن سفید برای خوانایی بهتر روی پس‌زمینه آبی */
 		}
 		.scroll-container {
 			max-height: 400px;
@@ -69,13 +76,18 @@
 		<textarea
 			id="dataInput"
 			class="w-full h-40 p-4 mb-6 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
-			placeholder="داده‌های خود را اینجا وارد کنید..."
+			placeholder="داده‌های خود را اینجا وارد کنید (مثال: YYYY-MM-DD)..."
 			onkeyup="generateReport()"
 		>
 0504-02-15	شنبه
+0504-03-01	یکشنبه
+0504-04-10	دوشنبه
 0528-04-23	دوشنبه
+0528-05-05	سه‌شنبه
 0529-07-01	پنجشنبه
 0536-11-15	پنجشنبه
+0536-12-01	جمعه
+0537-01-01	شنبه
 </textarea>
 
 		<div id="summaryContainer" class="text-center mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -92,7 +104,10 @@
 		function generateReport() {
 			const dataInput = document.getElementById('dataInput').value;
 			const lines = dataInput.trim().split('\n');
+			// مجموعه ای برای ذخیره تمام ماه های شناسایی شده
 			const detectedData = new Set();
+			// مجموعه ای برای ذخیره ماه هایی که بخشی از یک دنباله متوالی هستند
+			const consecutiveMonths = new Set();
 
 			lines.forEach(line => {
 				const parts = line.trim().split(/\s+/);
@@ -102,7 +117,7 @@
 					if (dateSegments.length === 3) {
 						const year = parseInt(dateSegments[0], 10);
 						const month = parseInt(dateSegments[1], 10);
-						// Adjusted maxYear to 1299
+						// سال ها باید بین 500 تا 1299 باشند و ماه ها بین 1 تا 12
 						if (!isNaN(year) && !isNaN(month) && year >= 500 && year <= 1299 && month >= 1 && month <= 12) {
 							detectedData.add(`${year}-${month}`);
 						}
@@ -111,8 +126,40 @@
 			});
 
 			const minYear = 500;
-			const maxYear = 1299; // Changed to 1299 as requested
-			const numYears = maxYear - minYear + 1; // 800 years
+			const maxYear = 1299;
+			const numYears = maxYear - minYear + 1;
+
+			// شناسایی ماه های متوالی
+			for (let year = minYear; year <= maxYear; year++) {
+				let consecutiveCount = 0;
+				let startMonth = 0;
+				for (let month = 1; month <= 12; month++) {
+					const currentKey = `${year}-${month}`;
+					if (detectedData.has(currentKey)) {
+						consecutiveCount++;
+						if (consecutiveCount === 1) {
+							startMonth = month;
+						}
+					} else {
+						// اگر دنباله ای از ماه های متوالی قطع شد
+						if (consecutiveCount >= 2) {
+							// علامت گذاری ماه های متوالی در مجموعه consecutiveMonths
+							for (let m = startMonth; m < month; m++) {
+								consecutiveMonths.add(`${year}-${m}`);
+							}
+						}
+						consecutiveCount = 0;
+					}
+				}
+				// بررسی دنباله ای که در پایان سال به اتمام می رسد
+				if (consecutiveCount >= 2) {
+					for (let m = startMonth; m <= 12; m++) {
+						consecutiveMonths.add(`${year}-${m}`);
+					}
+				}
+			}
+
+
 			const totalPossibleCells = numYears * 12;
 			const greenCellsCount = detectedData.size;
 
@@ -135,7 +182,7 @@
 			const yearsPerRow = numYears / numRows; // 800 / 8 = 100 years per row
 			const pixelsPerUnit = 4; // Each month pixel is 4x4
 
-			// Set canvas dimensions based on new layout
+			// تنظیم ابعاد بوم بر اساس طرح جدید
 			canvas.width = yearsPerRow * pixelsPerUnit; // 100 * 4 = 400
 			canvas.height = numRows * 12 * pixelsPerUnit; // 8 * 12 * 4 = 384
 
@@ -146,12 +193,14 @@
 
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
-					if (detectedData.has(key)) {
-						ctx.fillStyle = '#090';
+					if (consecutiveMonths.has(key)) {
+						ctx.fillStyle = '#0000FF'; // آبی برای ماه های متوالی
+					} else if (detectedData.has(key)) {
+						ctx.fillStyle = '#090'; // سبز برای ماه های تکی دارای داده
 					} else {
-						ctx.fillStyle = '#ffffff';
+						ctx.fillStyle = '#ffffff'; // سفید برای ماه های بدون داده
 					}
-					// Calculate x and y coordinates for 4x4 pixel blocks
+					// محاسبه مختصات x و y برای بلوک های پیکسلی 4x4
 					const x = yearInRowIndex * pixelsPerUnit;
 					const y = (row * 12 * pixelsPerUnit) + ((month - 1) * pixelsPerUnit);
 					ctx.fillRect(x, y, pixelsPerUnit, pixelsPerUnit);
@@ -174,8 +223,13 @@
 				tableHtml += `<tr><td class="font-semibold">${year}</td>`;
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
-					const isHighlighted = detectedData.has(key) ? 'highlighted' : '';
-					tableHtml += `<td class="${isHighlighted}"></td>`;
+					let cellClass = '';
+					if (consecutiveMonths.has(key)) {
+						cellClass = 'consecutive-highlighted'; // کلاس برای ماه های متوالی
+					} else if (detectedData.has(key)) {
+						cellClass = 'highlighted'; // کلاس برای ماه های تکی دارای داده
+					}
+					tableHtml += `<td class="${cellClass}"></td>`;
 				}
 				tableHtml += `</tr>`;
 			}
