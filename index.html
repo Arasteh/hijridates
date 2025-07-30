@@ -53,6 +53,12 @@
 			font-weight: 500;
 			color: white; /* متن سفید برای خوانایی بهتر روی پس‌زمینه آبی */
 		}
+		/* رنگ برای ماه‌های میانی در توالی‌های حداقل سه‌تایی (نارنجی) */
+		.inner-consecutive-highlighted {
+			background-color: #FFA500; /* نارنجی */
+			font-weight: 500;
+			color: white; /* متن سفید برای خوانایی بهتر روی پس‌زمینه نارنجی */
+		}
 		.scroll-container {
 			max-height: 400px;
 			overflow-y: auto;
@@ -82,6 +88,8 @@
 0504-02-15	شنبه
 0504-03-01	یکشنبه
 0504-04-10	دوشنبه
+0504-05-01	سه‌شنبه
+0504-06-01	چهارشنبه
 0528-04-23	دوشنبه
 0528-05-05	سه‌شنبه
 0529-07-01	پنجشنبه
@@ -106,8 +114,10 @@
 			const lines = dataInput.trim().split('\n');
 			// مجموعه ای برای ذخیره تمام ماه های شناسایی شده
 			const detectedData = new Set();
-			// مجموعه ای برای ذخیره ماه هایی که بخشی از یک دنباله متوالی هستند
+			// مجموعه ای برای ذخیره ماه هایی که بخشی از یک دنباله متوالی هستند (حداقل 2 ماه)
 			const consecutiveMonths = new Set();
+			// مجموعه ای برای ذخیره ماه هایی که در میانه یک دنباله متوالی حداقل 3 ماهه هستند
+			const innerConsecutiveMonths = new Set();
 
 			lines.forEach(line => {
 				const parts = line.trim().split(/\s+/);
@@ -129,36 +139,37 @@
 			const maxYear = 1299;
 			const numYears = maxYear - minYear + 1;
 
-			// شناسایی ماه های متوالی
+			// شناسایی ماه های متوالی و ماه های میانی متوالی
 			for (let year = minYear; year <= maxYear; year++) {
-				let consecutiveCount = 0;
-				let startMonth = 0;
+				let currentSequence = [];
 				for (let month = 1; month <= 12; month++) {
-					const currentKey = `${year}-${month}`;
-					if (detectedData.has(currentKey)) {
-						consecutiveCount++;
-						if (consecutiveCount === 1) {
-							startMonth = month;
-						}
+					const key = `${year}-${month}`;
+					if (detectedData.has(key)) {
+						currentSequence.push(key);
 					} else {
-						// اگر دنباله ای از ماه های متوالی قطع شد
-						if (consecutiveCount >= 2) {
-							// علامت گذاری ماه های متوالی در مجموعه consecutiveMonths
-							for (let m = startMonth; m < month; m++) {
-								consecutiveMonths.add(`${year}-${m}`);
+						// پردازش دنباله ای که همین الان به پایان رسید
+						if (currentSequence.length >= 2) {
+							currentSequence.forEach(mKey => consecutiveMonths.add(mKey));
+						}
+						if (currentSequence.length >= 3) {
+							// اضافه کردن ماه های میانی به مجموعه innerConsecutiveMonths
+							for (let i = 1; i < currentSequence.length - 1; i++) {
+								innerConsecutiveMonths.add(currentSequence[i]);
 							}
 						}
-						consecutiveCount = 0;
+						currentSequence = []; // بازنشانی برای دنباله بعدی
 					}
 				}
-				// بررسی دنباله ای که در پایان سال به اتمام می رسد
-				if (consecutiveCount >= 2) {
-					for (let m = startMonth; m <= 12; m++) {
-						consecutiveMonths.add(`${year}-${m}`);
+				// پردازش هر دنباله باقی مانده در پایان سال
+				if (currentSequence.length >= 2) {
+					currentSequence.forEach(mKey => consecutiveMonths.add(mKey));
+				}
+				if (currentSequence.length >= 3) {
+					for (let i = 1; i < currentSequence.length - 1; i++) {
+						innerConsecutiveMonths.add(currentSequence[i]);
 					}
 				}
 			}
-
 
 			const totalPossibleCells = numYears * 12;
 			const greenCellsCount = detectedData.size;
@@ -180,21 +191,23 @@
 
 			const numRows = 8;
 			const yearsPerRow = numYears / numRows; // 800 / 8 = 100 years per row
-			const pixelsPerUnit = 4; // Each month pixel is 4x4
+			const pixelsPerUnit = 4; // هر ماه یک پیکسل 4x4 است
 
 			// تنظیم ابعاد بوم بر اساس طرح جدید
 			canvas.width = yearsPerRow * pixelsPerUnit; // 100 * 4 = 400
 			canvas.height = numRows * 12 * pixelsPerUnit; // 8 * 12 * 4 = 384
 
 			for (let year = minYear; year <= maxYear; year++) {
-				const totalYearIndex = year - minYear; // 0 to 799
+				const totalYearIndex = year - minYear; // 0 تا 799
 				const row = Math.floor(totalYearIndex / yearsPerRow);
 				const yearInRowIndex = totalYearIndex % yearsPerRow;
 
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
-					if (consecutiveMonths.has(key)) {
-						ctx.fillStyle = '#0000FF'; // آبی برای ماه های متوالی
+					if (innerConsecutiveMonths.has(key)) {
+						ctx.fillStyle = '#FFA500'; // نارنجی برای ماه های میانی متوالی
+					} else if (consecutiveMonths.has(key)) {
+						ctx.fillStyle = '#0000FF'; // آبی برای ماه های متوالی (غیر میانی)
 					} else if (detectedData.has(key)) {
 						ctx.fillStyle = '#090'; // سبز برای ماه های تکی دارای داده
 					} else {
@@ -224,10 +237,12 @@
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
 					let cellClass = '';
-					if (consecutiveMonths.has(key)) {
-						cellClass = 'consecutive-highlighted'; // کلاس برای ماه های متوالی
+					if (innerConsecutiveMonths.has(key)) {
+						cellClass = 'inner-consecutive-highlighted'; // کلاس برای ماه های میانی متوالی (نارنجی)
+					} else if (consecutiveMonths.has(key)) {
+						cellClass = 'consecutive-highlighted'; // کلاس برای ماه های متوالی (آبی)
 					} else if (detectedData.has(key)) {
-						cellClass = 'highlighted'; // کلاس برای ماه های تکی دارای داده
+						cellClass = 'highlighted'; // کلاس برای ماه های تکی دارای داده (سبز)
 					}
 					tableHtml += `<td class="${cellClass}"></td>`;
 				}
