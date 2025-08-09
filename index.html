@@ -42,32 +42,32 @@
 		td {
 			background-color: #ffffff;
 		}
-		/* رنگ برای ماه‌های دارای داده تکی (قرمز کمرنگ - کمترین دقت) */
+		/* رنگ برای ماه‌های دارای داده تکی (نارنجی - کمترین دقت) */
 		.highlighted {
-			background-color: #FFCCCC;
+			background-color: #f90;
 			font-weight: 500;
 		}
-		/* رنگ برای ماه‌های متوالی (نارنجی - دقت متوسط) */
+		/* رنگ برای ماه‌های متوالی (زرد - دقت متوسط) */
 		.consecutive-highlighted {
-			background-color: #FFA500; /* نارنجی */
+			background-color: #fc0; /* زرد */
 			font-weight: 500;
-			color: white;
+			color: black;
 		}
-		/* رنگ برای ماه‌های میانی در توالی‌های حداقل سه‌تایی (سبز - دقت بالا) */
+		/* رنگ برای ماه‌های میانی در توالی‌های حداقل سه‌تایی (سبزآبی - دقت بالا) */
 		.inner-consecutive-highlighted {
-			background-color: #090; /* سبز */
+			background-color: #3debbd; /* سبزآبی */
 			font-weight: 500;
-			color: white;
+			color: black;
 		}
-		/* رنگ برای ماه‌هایی که تاریخ‌های آن همدیگر را تأیید می‌کنند (آبی فیروزه‌ای - دقت بسیار بالا) */
+		/* رنگ برای ماه‌هایی که تاریخ‌های آن همدیگر را تأیید می‌کنند (سبز لیمویی - دقت بسیار بالا) */
 		.confirmed-highlighted {
-			background-color: #00FFFF; /* آبی فیروزه‌ای */
+			background-color: #9c0; /* سبز لیمویی */
 			font-weight: 500;
-			color: black; /* متن سیاه برای خوانایی بهتر */
+			color: black;
 		}
-		/* رنگ برای ماه‌هایی که هم متوالی هستند و هم تأیید شده‌اند (آبی سیر - بالاترین دقت) */
+		/* رنگ برای ماه‌هایی که هم متوالی هستند و هم تأیید شده‌اند (سبز تیره - بالاترین دقت) */
 		.confirmed-and-inner-consecutive-highlighted {
-			background-color: #00008B; /* آبی سیر */
+			background-color: #008000; /* سبز تیره */
 			font-weight: 500;
 			color: white;
 		}
@@ -81,9 +81,20 @@
 			border: 1px solid #e2e8f0;
 			display: block;
 			margin: 1rem auto;
-			image-rendering: pixelated; /* Ensures sharp pixels */
-			max-width: 100%; /* Make canvas responsive */
-			height: auto; /* Maintain aspect ratio */
+			image-rendering: pixelated;
+			max-width: 100%;
+			height: auto;
+		}
+		.legend-item {
+			display: flex;
+			align-items: center;
+			margin-bottom: 0.5rem;
+		}
+		.legend-color-box {
+			width: 20px;
+			height: 20px;
+			border-radius: 4px;
+			margin-left: 0.5rem;
 		}
 	</style>
 </head>
@@ -110,8 +121,34 @@
 0915-03-05	یکشنبه
 0915-03-10	جمعه
 </textarea>
-
+		
 		<div id="summaryContainer" class="text-center mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+		</div>
+
+		<div id="legendContainer" class="p-4 bg-gray-100 rounded-lg border border-gray-300 mb-6">
+			<h3 class="text-lg font-semibold mb-2">راهنمای رنگ‌ها (بر اساس میزان دقت)</h3>
+			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+				<div class="legend-item">
+					<div class="legend-color-box bg-[#f90]"></div>
+					<span>پایین‌ترین دقت (تک‌تاریخ)</span>
+				</div>
+				<div class="legend-item">
+					<div class="legend-color-box bg-[#fc0]"></div>
+					<span>دقت متوسط (توالی 2+ ماهه)</span>
+				</div>
+				<div class="legend-item">
+					<div class="legend-color-box bg-[#3debbd]"></div>
+					<span>دقت بالا (توالی 3+ ماهه)</span>
+				</div>
+				<div class="legend-item">
+					<div class="legend-color-box bg-[#9c0]"></div>
+					<span>دقت بسیار بالا (تاریخ‌ها تأیید شده)</span>
+				</div>
+				<div class="legend-item">
+					<div class="legend-color-box bg-[#008000]"></div>
+					<span>بالاترین دقت (تأیید شده و 3+ ماهه متوالی)</span>
+				</div>
+			</div>
 		</div>
 
 		<canvas id="dataCanvas" width="400" height="384"></canvas>
@@ -283,15 +320,15 @@
 					const key = `${year}-${month}`;
 					// اولویت‌بندی جدید بر اساس منطق دقت
 					if (confirmedMonths.has(key) && innerConsecutiveMonths.has(key)) {
-						ctx.fillStyle = '#00008B'; // آبی سیر
+						ctx.fillStyle = '#008000'; // آبی سیر
 					} else if (confirmedMonths.has(key)) {
-						ctx.fillStyle = '#00FFFF'; // آبی فیروزه‌ای
+						ctx.fillStyle = '#9c0'; // آبی فیروزه‌ای
 					} else if (innerConsecutiveMonths.has(key)) {
-						ctx.fillStyle = '#090'; // سبز
+						ctx.fillStyle = '#3debbd'; // سبز
 					} else if (consecutiveMonths.has(key)) {
-						ctx.fillStyle = '#FFA500'; // نارنجی
+						ctx.fillStyle = '#fc0'; // نارنجی
 					} else if (detectedData.has(key)) {
-						ctx.fillStyle = '#FFCCCC'; // قرمز کمرنگ
+						ctx.fillStyle = '#f90'; // قرمز کمرنگ
 					} else {
 						ctx.fillStyle = '#ffffff'; // سفید
 					}
