@@ -65,6 +65,12 @@
 			font-weight: 500;
 			color: white;
 		}
+		/* رنگ برای ماه‌هایی که هم متوالی هستند و هم تأیید شده‌اند (قهوه‌ای مایل به قرمز) */
+		.confirmed-and-inner-consecutive-highlighted {
+			background-color: #800000; /* قهوه‌ای مایل به قرمز */
+			font-weight: 500;
+			color: white;
+		}
 		.scroll-container {
 			max-height: 400px;
 			overflow-y: auto;
@@ -276,7 +282,10 @@
 
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
-					if (confirmedMonths.has(key)) {
+					// اولویت با حالت جدید: هم متوالی و هم تأیید شده
+					if (confirmedMonths.has(key) && innerConsecutiveMonths.has(key)) {
+						ctx.fillStyle = '#800000'; // قهوه‌ای مایل به قرمز
+					} else if (confirmedMonths.has(key)) {
 						ctx.fillStyle = '#8A2BE2'; // بنفش برای ماه های تأیید شده
 					} else if (innerConsecutiveMonths.has(key)) {
 						ctx.fillStyle = '#FFA500'; // نارنجی برای ماه های میانی متوالی
@@ -311,7 +320,10 @@
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
 					let cellClass = '';
-					if (confirmedMonths.has(key)) {
+					// اولویت با حالت جدید: هم متوالی و هم تأیید شده
+					if (confirmedMonths.has(key) && innerConsecutiveMonths.has(key)) {
+						cellClass = 'confirmed-and-inner-consecutive-highlighted'; // قهوه‌ای مایل به قرمز
+					} else if (confirmedMonths.has(key)) {
 						cellClass = 'confirmed-highlighted'; // کلاس برای ماه های تأیید شده (بنفش)
 					} else if (innerConsecutiveMonths.has(key)) {
 						cellClass = 'inner-consecutive-highlighted'; // کلاس برای ماه های میانی متوالی (نارنجی)
