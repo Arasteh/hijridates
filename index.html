@@ -59,6 +59,12 @@
 			font-weight: 500;
 			color: white; /* متن سفید برای خوانایی بهتر روی پس‌زمینه نارنجی */
 		}
+		/* رنگ برای ماه‌هایی که تاریخ‌های آن همدیگر را تأیید می‌کنند (بنفش) */
+		.confirmed-highlighted {
+			background-color: #8A2BE2; /* بنفش */
+			font-weight: 500;
+			color: white;
+		}
 		.scroll-container {
 			max-height: 400px;
 			overflow-y: auto;
@@ -96,6 +102,8 @@
 0536-11-15	پنجشنبه
 0536-12-01	جمعه
 0537-01-01	شنبه
+0915-03-05	یکشنبه
+0915-03-10	جمعه
 </textarea>
 
 		<div id="summaryContainer" class="text-center mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -109,27 +117,85 @@
 	</div>
 
 	<script>
+		// یک نگاشت برای تبدیل نام روز به عدد (0 برای شنبه تا 6 برای جمعه)
+		const dayOfWeekMap = {
+			'شنبه': 0,
+			'یکشنبه': 1,
+			'دوشنبه': 2,
+			'سه‌شنبه': 3,
+			'چهارشنبه': 4,
+			'پنجشنبه': 5,
+			'جمعه': 6
+		};
+
+		/**
+		 * منطق تأیید روز هفته برای تاریخ‌های یک ماه مشخص
+		 * @param {Array<Object>} monthData - آرایه‌ای از اشیاء {day, dayOfWeek}
+		 * @returns {boolean} - اگر تاریخ‌ها همدیگر را تأیید کنند، true و در غیر این صورت false
+		 */
+		function checkMonthForConfirmation(monthData) {
+			// اگر کمتر از دو تاریخ در ماه وجود داشته باشد، نیازی به بررسی نیست
+			if (monthData.length < 2) {
+				return false;
+			}
+			
+			// تاریخ‌ها را بر اساس روز ماه مرتب می‌کنیم
+			monthData.sort((a, b) => a.day - b.day);
+
+			// اولین تاریخ را به عنوان مبدأ در نظر می‌گیریم
+			const firstDate = monthData[0];
+			const firstDayNum = dayOfWeekMap[firstDate.dayOfWeek];
+
+			// بقیه تاریخ‌ها را با اولین تاریخ مقایسه می‌کنیم
+			for (let i = 1; i < monthData.length; i++) {
+				const currentDate = monthData[i];
+				const currentDayNum = dayOfWeekMap[currentDate.dayOfWeek];
+
+				// محاسبه اختلاف روزهای ماه و روزهای هفته
+				const dayDifference = currentDate.day - firstDate.day;
+				const dayOfWeekDifference = (currentDayNum - firstDayNum + 7) % 7;
+
+				// اگر اختلاف روزها با اختلاف روزهای هفته منطبق نباشد، تأیید نمی‌شوند
+				if (dayDifference % 7 !== dayOfWeekDifference) {
+					return false;
+				}
+			}
+
+			// اگر همه تاریخ‌ها منطبق باشند، تأیید می‌شوند
+			return true;
+		}
+
 		function generateReport() {
 			const dataInput = document.getElementById('dataInput').value;
 			const lines = dataInput.trim().split('\n');
-			// مجموعه ای برای ذخیره تمام ماه های شناسایی شده
+			
 			const detectedData = new Set();
-			// مجموعه ای برای ذخیره ماه هایی که بخشی از یک دنباله متوالی هستند (حداقل 2 ماه)
 			const consecutiveMonths = new Set();
-			// مجموعه ای برای ذخیره ماه هایی که در میانه یک دنباله متوالی حداقل 3 ماهه هستند
 			const innerConsecutiveMonths = new Set();
+			const confirmedMonths = new Set();
+			
+			// یک شی برای نگهداری تمام تاریخ‌های هر ماه
+			const allMonthDates = {};
 
 			lines.forEach(line => {
 				const parts = line.trim().split(/\s+/);
-				if (parts.length >= 1) {
+				if (parts.length >= 2) {
 					const datePart = parts[0];
+					const dayOfWeekPart = parts[1];
 					const dateSegments = datePart.split('-');
 					if (dateSegments.length === 3) {
 						const year = parseInt(dateSegments[0], 10);
 						const month = parseInt(dateSegments[1], 10);
-						// سال ها باید بین 500 تا 1299 باشند و ماه ها بین 1 تا 12
-						if (!isNaN(year) && !isNaN(month) && year >= 500 && year <= 1299 && month >= 1 && month <= 12) {
-							detectedData.add(`${year}-${month}`);
+						const day = parseInt(dateSegments[2], 10);
+						// سال‌ها باید بین 500 تا 1299 باشند و ماه‌ها بین 1 تا 12
+						if (!isNaN(year) && !isNaN(month) && !isNaN(day) && year >= 500 && year <= 1299 && month >= 1 && month <= 12) {
+							const key = `${year}-${month}`;
+							detectedData.add(key);
+
+							if (!allMonthDates[key]) {
+								allMonthDates[key] = [];
+							}
+							allMonthDates[key].push({ day: day, dayOfWeek: dayOfWeekPart });
 						}
 					}
 				}
@@ -139,11 +205,17 @@
 			const maxYear = 1299;
 			const numYears = maxYear - minYear + 1;
 
-			// شناسایی ماه های متوالی و ماه های میانی متوالی
+			// شناسایی ماه های متوالی و ماه های میانی متوالی و ماه های تأیید شده
 			for (let year = minYear; year <= maxYear; year++) {
 				let currentSequence = [];
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
+
+					// بررسی ماه های تأیید شده
+					if (allMonthDates[key] && checkMonthForConfirmation(allMonthDates[key])) {
+						confirmedMonths.add(key);
+					}
+
 					if (detectedData.has(key)) {
 						currentSequence.push(key);
 					} else {
@@ -204,7 +276,9 @@
 
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
-					if (innerConsecutiveMonths.has(key)) {
+					if (confirmedMonths.has(key)) {
+						ctx.fillStyle = '#8A2BE2'; // بنفش برای ماه های تأیید شده
+					} else if (innerConsecutiveMonths.has(key)) {
 						ctx.fillStyle = '#FFA500'; // نارنجی برای ماه های میانی متوالی
 					} else if (consecutiveMonths.has(key)) {
 						ctx.fillStyle = '#0000FF'; // آبی برای ماه های متوالی (غیر میانی)
@@ -237,7 +311,9 @@
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
 					let cellClass = '';
-					if (innerConsecutiveMonths.has(key)) {
+					if (confirmedMonths.has(key)) {
+						cellClass = 'confirmed-highlighted'; // کلاس برای ماه های تأیید شده (بنفش)
+					} else if (innerConsecutiveMonths.has(key)) {
 						cellClass = 'inner-consecutive-highlighted'; // کلاس برای ماه های میانی متوالی (نارنجی)
 					} else if (consecutiveMonths.has(key)) {
 						cellClass = 'consecutive-highlighted'; // کلاس برای ماه های متوالی (آبی)
