@@ -42,32 +42,32 @@
 		td {
 			background-color: #ffffff;
 		}
-		/* رنگ برای ماه‌های دارای داده تکی (سبز) */
+		/* رنگ برای ماه‌های دارای داده تکی (قرمز کمرنگ - کمترین دقت) */
 		.highlighted {
-			background-color: #090;
+			background-color: #FFCCCC;
 			font-weight: 500;
 		}
-		/* رنگ برای ماه‌های متوالی (آبی) */
+		/* رنگ برای ماه‌های متوالی (نارنجی - دقت متوسط) */
 		.consecutive-highlighted {
-			background-color: #0000FF; /* آبی */
-			font-weight: 500;
-			color: white; /* متن سفید برای خوانایی بهتر روی پس‌زمینه آبی */
-		}
-		/* رنگ برای ماه‌های میانی در توالی‌های حداقل سه‌تایی (نارنجی) */
-		.inner-consecutive-highlighted {
 			background-color: #FFA500; /* نارنجی */
-			font-weight: 500;
-			color: white; /* متن سفید برای خوانایی بهتر روی پس‌زمینه نارنجی */
-		}
-		/* رنگ برای ماه‌هایی که تاریخ‌های آن همدیگر را تأیید می‌کنند (بنفش) */
-		.confirmed-highlighted {
-			background-color: #8A2BE2; /* بنفش */
 			font-weight: 500;
 			color: white;
 		}
-		/* رنگ برای ماه‌هایی که هم متوالی هستند و هم تأیید شده‌اند (قهوه‌ای مایل به قرمز) */
+		/* رنگ برای ماه‌های میانی در توالی‌های حداقل سه‌تایی (سبز - دقت بالا) */
+		.inner-consecutive-highlighted {
+			background-color: #090; /* سبز */
+			font-weight: 500;
+			color: white;
+		}
+		/* رنگ برای ماه‌هایی که تاریخ‌های آن همدیگر را تأیید می‌کنند (آبی فیروزه‌ای - دقت بسیار بالا) */
+		.confirmed-highlighted {
+			background-color: #00FFFF; /* آبی فیروزه‌ای */
+			font-weight: 500;
+			color: black; /* متن سیاه برای خوانایی بهتر */
+		}
+		/* رنگ برای ماه‌هایی که هم متوالی هستند و هم تأیید شده‌اند (آبی سیر - بالاترین دقت) */
 		.confirmed-and-inner-consecutive-highlighted {
-			background-color: #800000; /* قهوه‌ای مایل به قرمز */
+			background-color: #00008B; /* آبی سیر */
 			font-weight: 500;
 			color: white;
 		}
@@ -96,8 +96,7 @@
 			class="w-full h-40 p-4 mb-6 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
 			placeholder="داده‌های خود را اینجا وارد کنید (مثال: YYYY-MM-DD)..."
 			onkeyup="generateReport()"
-		>
-0504-02-15	شنبه
+		>0504-02-15	شنبه
 0504-03-01	یکشنبه
 0504-04-10	دوشنبه
 0504-05-01	سه‌شنبه
@@ -282,19 +281,19 @@
 
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
-					// اولویت با حالت جدید: هم متوالی و هم تأیید شده
+					// اولویت‌بندی جدید بر اساس منطق دقت
 					if (confirmedMonths.has(key) && innerConsecutiveMonths.has(key)) {
-						ctx.fillStyle = '#800000'; // قهوه‌ای مایل به قرمز
+						ctx.fillStyle = '#00008B'; // آبی سیر
 					} else if (confirmedMonths.has(key)) {
-						ctx.fillStyle = '#8A2BE2'; // بنفش برای ماه های تأیید شده
+						ctx.fillStyle = '#00FFFF'; // آبی فیروزه‌ای
 					} else if (innerConsecutiveMonths.has(key)) {
-						ctx.fillStyle = '#FFA500'; // نارنجی برای ماه های میانی متوالی
+						ctx.fillStyle = '#090'; // سبز
 					} else if (consecutiveMonths.has(key)) {
-						ctx.fillStyle = '#0000FF'; // آبی برای ماه های متوالی (غیر میانی)
+						ctx.fillStyle = '#FFA500'; // نارنجی
 					} else if (detectedData.has(key)) {
-						ctx.fillStyle = '#090'; // سبز برای ماه های تکی دارای داده
+						ctx.fillStyle = '#FFCCCC'; // قرمز کمرنگ
 					} else {
-						ctx.fillStyle = '#ffffff'; // سفید برای ماه های بدون داده
+						ctx.fillStyle = '#ffffff'; // سفید
 					}
 					// محاسبه مختصات x و y برای بلوک های پیکسلی 4x4
 					const x = yearInRowIndex * pixelsPerUnit;
@@ -320,17 +319,17 @@
 				for (let month = 1; month <= 12; month++) {
 					const key = `${year}-${month}`;
 					let cellClass = '';
-					// اولویت با حالت جدید: هم متوالی و هم تأیید شده
+					// اولویت‌بندی جدید بر اساس منطق دقت
 					if (confirmedMonths.has(key) && innerConsecutiveMonths.has(key)) {
-						cellClass = 'confirmed-and-inner-consecutive-highlighted'; // قهوه‌ای مایل به قرمز
+						cellClass = 'confirmed-and-inner-consecutive-highlighted'; // آبی سیر
 					} else if (confirmedMonths.has(key)) {
-						cellClass = 'confirmed-highlighted'; // کلاس برای ماه های تأیید شده (بنفش)
+						cellClass = 'confirmed-highlighted'; // آبی فیروزه‌ای
 					} else if (innerConsecutiveMonths.has(key)) {
-						cellClass = 'inner-consecutive-highlighted'; // کلاس برای ماه های میانی متوالی (نارنجی)
+						cellClass = 'inner-consecutive-highlighted'; // سبز
 					} else if (consecutiveMonths.has(key)) {
-						cellClass = 'consecutive-highlighted'; // کلاس برای ماه های متوالی (آبی)
+						cellClass = 'consecutive-highlighted'; // نارنجی
 					} else if (detectedData.has(key)) {
-						cellClass = 'highlighted'; // کلاس برای ماه های تکی دارای داده (سبز)
+						cellClass = 'highlighted'; // قرمز کمرنگ
 					}
 					tableHtml += `<td class="${cellClass}"></td>`;
 				}
